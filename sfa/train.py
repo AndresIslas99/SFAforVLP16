@@ -8,6 +8,18 @@
 # Description: This script for training
 
 """
+import torch
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.enabled = True
+torch.backends.cudnn.allow_tf32 = True
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.find_enabled = False
+
+
+
+import os
+os.environ['CUDNN_DETERMINISTIC'] = '1'
 
 import time
 import numpy as np

@@ -6,9 +6,6 @@
 # email: nguyenmaudung93.kstn@gmail.com
 -----------------------------------------------------------------------------------
 # Description: Testing script
-
-114 esta el modelo 
-136 estan los outputs
 """
 
 import argparse
@@ -152,22 +149,17 @@ if __name__ == '__main__':
             # Rotate the bev_map
             bev_map = cv2.rotate(bev_map, cv2.ROTATE_180)
 
-            #img_path = metadatas['img_path'][0]
-            #img_rgb = img_rgbs[0].numpy()
-            #img_rgb = cv2.resize(img_rgb, (img_rgb.shape[1], img_rgb.shape[0]))
-            #img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
-            #calib = Calibration(img_path.replace(".png", ".txt").replace("image_2", "calib"))
             img_path = metadatas['img_path'][0]
-            calib_path = img_path.replace(".png", ".txt").replace("image_2", "calib")
-            calib = Calibration(calib_path)
+            img_rgb = img_rgbs[0].numpy()
+            img_rgb = cv2.resize(img_rgb, (img_rgb.shape[1], img_rgb.shape[0]))
+            img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
+            calib = Calibration(img_path.replace(".png", ".txt").replace("image_2", "calib"))
             kitti_dets = convert_det_to_real_values(detections)
             if len(kitti_dets) > 0:
                 kitti_dets[:, 1:] = lidar_to_camera_box(kitti_dets[:, 1:], calib.V2C, calib.R0, calib.P2)
-                #img_bgr = show_rgb_image_with_boxes(img_bgr, kitti_dets, calib)
+                img_bgr = show_rgb_image_with_boxes(img_bgr, kitti_dets, calib)
 
-            #out_img = merge_rgb_to_bev(img_bgr, bev_map, output_width=configs.output_width)
-            out_img =bev_map
-
+            out_img = merge_rgb_to_bev(img_bgr, bev_map, output_width=configs.output_width)
 
             print('\tDone testing the {}th sample, time: {:.1f}ms, speed {:.2f}FPS'.format(batch_idx, (t2 - t1) * 1000,
                                                                                            1 / (t2 - t1)))
@@ -182,7 +174,7 @@ if __name__ == '__main__':
                         out_cap = cv2.VideoWriter(
                             os.path.join(configs.results_dir, '{}.avi'.format(configs.output_video_fn)),
                             fourcc, 30, (out_cap_w, out_cap_h))
-		
+
                     out_cap.write(out_img)
                 else:
                     raise TypeError
