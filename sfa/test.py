@@ -17,6 +17,16 @@ import os
 import time
 import warnings
 
+import rospy
+from visualization_msgs.msg import Marker
+from visualization_msgs.msg import MarkerArray
+import tf.transformations as tf_transformations
+
+import threading
+import tf2_ros
+from geometry_msgs.msg import TransformStamped
+
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from easydict import EasyDict as edict
@@ -39,6 +49,86 @@ import config.kitti_config as cnf
 from data_process.transformation import lidar_to_camera_box
 from utils.visualization_utils import merge_rgb_to_bev, show_rgb_image_with_boxes
 from data_process.kitti_data_utils import Calibration
+
+
+def publish_transform(x, y, z, qx, qy, qz, qw, reference_frame, marker_frame):
+    broadcaster = tf2_ros.TransformBroadcaster()
+
+    rate = rospy.Rate(10)  # 10 Hz
+
+    while not rospy.is_shutdown():
+        transform = TransformStamped()
+        transform.header.stamp = rospy.Time.now()
+        transform.header.frame_id = reference_frame
+        transform.child_frame_id = marker_frame
+
+        # Set the translation and rotation values
+        transform.transform.translation.x = x
+        transform.transform.translation.y = y
+        transform.transform.translation.z = z
+        transform.transform.rotation.x = qx
+        transform.transform.rotation.y = qy
+        transform.transform.rotation.z = qz
+        transform.transform.rotation.w = qw
+
+        broadcaster.sendTransform(transform)
+
+        rate.sleep()
+
+def create_marker_array(detections):
+    marker_array = MarkerArray()
+    
+    marker_id = 0
+              
+    
+    for obj_class, obj_detections in detections.items():
+        for obj_detection in obj_detections:
+            marker = Marker()
+            marker.header.frame_id = "velodyne"
+            marker.type = Marker.CUBE
+            marker.action = Marker.ADD
+            marker.id = marker_id
+            marker.lifetime = rospy.Duration(0.1)  # Adjust the lifetime as needed
+
+            # Set the marker pose and dimensions based on the detection
+            marker.pose.position.x = obj_detection[0]
+            marker.pose.position.y = obj_detection[1]
+            marker.pose.position.z = obj_detection[2]
+            marker.scale.x = obj_detection[3]
+            marker.scale.y = obj_detection[4]
+            marker.scale.z = obj_detection[5]
+
+            # Calculate the quaternion from the yaw angle (obj_detection[6])
+            quaternion = tf_transformations.quaternion_from_euler(0, 0, obj_detection[6])
+
+            # Set the marker orientation using the computed quaternion
+            marker.pose.orientation.x = quaternion[0]
+            marker.pose.orientation.y = quaternion[1]
+            marker.pose.orientation.z = quaternion[2]
+            marker.pose.orientation.w = quaternion[3]
+
+            # Set the marker color based on the object class
+            color = colors[obj_class]
+            marker.color.r = color[0] / 255.0
+            marker.color.g = color[1] / 255.0
+            marker.color.b = color[2] / 255.0
+            marker.color.a = 1.0
+
+            marker_array.markers.append(marker)
+            marker_id += 1
+            
+            # Get the position and orientation from obj_detection
+            x, y, z = obj_detection[0], obj_detection[1], obj_detection[2]
+            qx, qy, qz, qw = quaternion[0], quaternion[1], quaternion[2], quaternion[3]
+            
+            # Set the marker frame using the marker_id
+            marker_frame = f"marker_frame_{marker_id}"
+            
+            # Start the transformation publisher for this object in a new thread
+        transform_thread = threading.Thread(target=publish_transform, args=(x, y, z, qx, qy, qz, qw, velodyne, marker_frame))
+        transform_thread.start()
+
+    return marker_array
 
 
 def parse_test_configs():
@@ -112,8 +202,20 @@ def parse_test_configs():
 
 
 if __name__ == '__main__':
-    configs = parse_test_configs()
+    
+    # Initialize the node
+    rospy.init_node('lidar_pointcloud_listener', anonymous=True)
+    marker_array_publisher = rospy.Publisher("detection_markers", MarkerArray, queue_size=1)
+   
 
+    configs = parse_test_configs()
+    colors = {
+    0: (255, 0, 0),   # class 0: red
+    1: (0, 255, 0),   # class 1: green
+    2: (0, 0, 255),   # class 2: blue
+    # Add more colors for additional classes
+}
+    
     model = create_model(configs)
     print('\n\n' + '-*=' * 30 + '\n\n')
     assert os.path.isfile(configs.pretrained_path), "No file at {}".format(configs.pretrained_path)
@@ -187,6 +289,8 @@ if __name__ == '__main__':
                 else:
                     raise TypeError
 
+            marker_array = create_marker_array(detections)
+            marker_array_publisher.publish(marker_array)
             cv2.imshow('test-img', out_img)
             print('\n[INFO] Press n to see the next sample >>> Press Esc to quit...\n')
             if cv2.waitKey(0) & 0xFF == 27:
