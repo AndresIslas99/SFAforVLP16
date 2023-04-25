@@ -28,8 +28,8 @@ def save_vlp16_to_kitti(las, output_path):
     points.astype(np.float32).tofile(output_path)
 
 
-input_folder = '/home/andres/Documents/SFA3D/SFA3D/dataset/kitti/testing/velodyne'
-output_folder = '/home/andres/Documents/SFA3D/SFA3D/dataset/kitti/testing/vlp16'
+input_folder = '/home/pragma/Documents/SFAforVLP16/dataset/kitti/testing/velodyne'
+output_folder = '/home/pragma/Documents/SFAforVLP16/dataset/kitti/testing/vlp16'
 os.makedirs(output_folder, exist_ok=True)
 
 for file_name in os.listdir(input_folder):
