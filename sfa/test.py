@@ -88,7 +88,7 @@ def create_marker_array(detections):
             marker.type = Marker.CUBE
             marker.action = Marker.ADD
             marker.id = marker_id
-            marker.lifetime = rospy.Duration(0.1)  # Adjust the lifetime as needed
+            marker.lifetime = rospy.Duration(3)  # Adjust the lifetime as needed
 
             # Set the marker pose and dimensions based on the detection
             marker.pose.position.x = obj_detection[0]
@@ -118,15 +118,16 @@ def create_marker_array(detections):
             marker_id += 1
             
             # Get the position and orientation from obj_detection
-            x, y, z = obj_detection[0], obj_detection[1], obj_detection[2]
-            qx, qy, qz, qw = quaternion[0], quaternion[1], quaternion[2], quaternion[3]
+            position_x, position_y, position_z = obj_detection[0], obj_detection[1], obj_detection[2]
+            orientation_x, orientation_y, orientation_z, orientation_w = quaternion[0], quaternion[1], quaternion[2], quaternion[3]
             
             # Set the marker frame using the marker_id
             marker_frame = f"marker_frame_{marker_id}"
+            reference_frame='velodyne'
             
             # Start the transformation publisher for this object in a new thread
-        transform_thread = threading.Thread(target=publish_transform, args=(x, y, z, qx, qy, qz, qw, velodyne, marker_frame))
-        transform_thread.start()
+            transform_thread = threading.Thread(target=publish_transform, args=(position_x, position_y, position_z, orientation_x, orientation_y, orientation_z, orientation_w, reference_frame, marker_frame))
+            transform_thread.start()
 
     return marker_array
 
@@ -213,6 +214,9 @@ if __name__ == '__main__':
     0: (255, 0, 0),   # class 0: red
     1: (0, 255, 0),   # class 1: green
     2: (0, 0, 255),   # class 2: blue
+    "car": (255, 0, 0),  # Red
+    "pedestrian": (0, 255, 0),  # Green
+    "cyclist": (0, 0, 255)  # Blue
     # Add more colors for additional classes
 }
     
