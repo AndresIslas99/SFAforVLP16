@@ -153,15 +153,21 @@ def post_processing(detections, num_classes=3, down_ratio=4, peak_thresh=0.2):
     return ret
 
 
-def draw_predictions(img, detections, num_classes=3):
+def draw_predictions(img, detections, num_classes=3, show_confidence=True):
     for j in range(num_classes):
         if len(detections[j]) > 0:
             for det in detections[j]:
                 # (scores-0:1, x-1:2, y-2:3, z-3:4, dim-4:7, yaw-7:8)
                 _score, _x, _y, _z, _h, _w, _l, _yaw = det
                 drawRotatedBox(img, _x, _y, _w, _l, _yaw, cnf.colors[int(j)])
+                
+                if show_confidence:
+                    conf_text = f"{_score * 100:.2f}%"
+                    cv2.putText(img, conf_text, (int(_x), int(_y) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, cnf.colors[int(j)], 2)
+
 
     return img
+
 
 
 def convert_det_to_real_values(detections, num_classes=3):

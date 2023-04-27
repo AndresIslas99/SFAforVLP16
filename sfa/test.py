@@ -253,7 +253,7 @@ if __name__ == '__main__':
             # Draw prediction in the image
             bev_map = (bev_maps.squeeze().permute(1, 2, 0).numpy() * 255).astype(np.uint8)
             bev_map = cv2.resize(bev_map, (cnf.BEV_WIDTH, cnf.BEV_HEIGHT))
-            bev_map = draw_predictions(bev_map, detections.copy(), configs.num_classes)
+            bev_map = draw_predictions(bev_map, detections.copy(), configs.num_classes, show_confidence=True)
 
             # Rotate the bev_map
             bev_map = cv2.rotate(bev_map, cv2.ROTATE_180)
@@ -275,8 +275,7 @@ if __name__ == '__main__':
             out_img =bev_map
 
 
-            print('\tDone testing the {}th sample, time: {:.1f}ms, speed {:.2f}FPS'.format(batch_idx, (t2 - t1) * 1000,
-                                                                                           1 / (t2 - t1)))
+            print('\tDone testing the {}th sample, time: {:.1f}ms, speed {:.2f}FPS'.format(batch_idx, (t2 - t1) * 1000,1 / (t2 - t1)))
             if configs.save_test_output:
                 if configs.output_format == 'image':
                     img_fn = os.path.basename(metadatas['img_path'][0])[:-4]
@@ -296,6 +295,8 @@ if __name__ == '__main__':
             marker_array = create_marker_array(detections)
             marker_array_publisher.publish(marker_array)
             cv2.imshow('test-img', out_img)
+            output_image_name = 'output_image_{}.png'.format(batch_idx)
+            cv2.imwrite(output_image_name, out_img)
             print('\n[INFO] Press n to see the next sample >>> Press Esc to quit...\n')
             if cv2.waitKey(0) & 0xFF == 27:
                 break

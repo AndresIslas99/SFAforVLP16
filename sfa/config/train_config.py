@@ -31,6 +31,8 @@ def parse_train_configs():
                         help='The name of the model architecture')
     parser.add_argument('--pretrained_path', type=str, default=None, metavar='PATH',
                         help='the path of the pretrained checkpoint')
+    parser.add_argument('--num_layers_to_freeze', type=int, default=0, metavar='N',
+                        help='number of layers to freeze during training')
 
     ####################################################################
     ##############     Dataloader and Running configs            #######
