@@ -51,7 +51,7 @@ from utils.visualization_utils import merge_rgb_to_bev, show_rgb_image_with_boxe
 from data_process.kitti_data_utils import Calibration
 
 
-def publish_transform(x, y, z, qx, qy, qz, qw, reference_frame, marker_frame):
+def publish_transform(x, y, z, qx, qy, qz, qw, reference_frame):
     broadcaster = tf2_ros.TransformBroadcaster()
 
     rate = rospy.Rate(10)  # 10 Hz
@@ -60,7 +60,7 @@ def publish_transform(x, y, z, qx, qy, qz, qw, reference_frame, marker_frame):
         transform = TransformStamped()
         transform.header.stamp = rospy.Time.now()
         transform.header.frame_id = reference_frame
-        transform.child_frame_id = marker_frame
+        #transform.child_frame_id = "marker_frame"
 
         # Set the translation and rotation values
         transform.transform.translation.x = x
@@ -88,7 +88,7 @@ def create_marker_array(detections):
             marker.type = Marker.CUBE
             marker.action = Marker.ADD
             marker.id = marker_id
-            marker.lifetime = rospy.Duration(3)  # Adjust the lifetime as needed
+            marker.lifetime = rospy.Duration(1000)  # Adjust the lifetime as needed
 
             # Set the marker pose and dimensions based on the detection
             marker.pose.position.x = obj_detection[0]
@@ -122,12 +122,11 @@ def create_marker_array(detections):
             orientation_x, orientation_y, orientation_z, orientation_w = quaternion[0], quaternion[1], quaternion[2], quaternion[3]
             
             # Set the marker frame using the marker_id
-            marker_frame = f"marker_frame_{marker_id}"
             reference_frame='velodyne'
             
             # Start the transformation publisher for this object in a new thread
-            transform_thread = threading.Thread(target=publish_transform, args=(position_x, position_y, position_z, orientation_x, orientation_y, orientation_z, orientation_w, reference_frame, marker_frame))
-            transform_thread.start()
+            #transform_thread = threading.Thread(target=publish_transform, args=(position_x, position_y, position_z, orientation_x, orientation_y, orientation_z, orientation_w, reference_frame))
+            #transform_thread.start()
 
     return marker_array
 
@@ -139,7 +138,7 @@ def parse_test_configs():
     parser.add_argument('-a', '--arch', type=str, default='fpn_resnet_18', metavar='ARCH',
                         help='The name of the model architecture')
     parser.add_argument('--pretrained_path', type=str,
-                        default='../checkpoints/fpn_resnet_18/Model_fpn_resnet_18_epoch_300.pth', metavar='PATH',
+                        default='../checkpoints/fpn_resnet_18/Model_TransferLearningModel_epoch_100.pth', metavar='PATH',
                         help='the path of the pretrained checkpoint')
     parser.add_argument('--K', type=int, default=50,
                         help='the number of top K')
@@ -296,7 +295,7 @@ if __name__ == '__main__':
             marker_array_publisher.publish(marker_array)
             cv2.imshow('test-img', out_img)
             output_image_name = 'output_image_{}.png'.format(batch_idx)
-            cv2.imwrite(output_image_name, out_img)
+            #cv2.imwrite(output_image_name, out_img)
             print('\n[INFO] Press n to see the next sample >>> Press Esc to quit...\n')
             if cv2.waitKey(0) & 0xFF == 27:
                 break
